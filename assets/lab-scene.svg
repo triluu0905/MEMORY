@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640" role="img" aria-label="Minh họa phòng thí nghiệm">
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#173E3D"/><stop offset="1" stop-color="#508B81"/></linearGradient>
+    <linearGradient id="glass" x2="1" y2="1"><stop stop-color="#D9F3EA" stop-opacity=".85"/><stop offset="1" stop-color="#8DCEC5" stop-opacity=".45"/></linearGradient>
+  </defs>
+  <rect width="960" height="640" fill="url(#bg)"/>
+  <circle cx="782" cy="124" r="202" fill="#A5DAC7" opacity=".09"/>
+  <circle cx="123" cy="525" r="220" fill="#75C5B4" opacity=".11"/>
+  <rect x="0" y="480" width="960" height="160" fill="#12352F"/>
+  <rect x="52" y="464" width="856" height="24" rx="10" fill="#A9C9BE"/>
+  <rect x="108" y="150" width="385" height="17" rx="8" fill="#B3D5C8"/>
+  <rect x="126" y="167" width="14" height="212" fill="#9BBDB2"/>
+  <rect x="461" y="167" width="14" height="212" fill="#9BBDB2"/>
+  <path d="M196 166v188c0 36-17 49-26 87h113c-9-38-26-51-26-87V166" fill="url(#glass)" stroke="#D5EFE6" stroke-width="8"/>
+  <path d="M177 403h99l8 38H169z" fill="#51C9B0" opacity=".7"/>
+  <rect x="323" y="168" width="94" height="199" rx="20" fill="url(#glass)" stroke="#D5EFE6" stroke-width="8"/>
+  <path d="M326 321h88v34a20 20 0 0 1-20 20h-48a20 20 0 0 1-20-20z" fill="#68D4BB" opacity=".66"/>
+  <rect x="585" y="218" width="22" height="235" rx="8" fill="#B6DBD0"/>
+  <path d="M581 219h31l67-121 27 14-67 126-34 27z" fill="#E0F4ED"/>
+  <circle cx="613" cy="269" r="38" fill="#DDF2EA"/>
+  <circle cx="613" cy="269" r="21" fill="#4D9585"/>
+  <path d="M628 378h115v24H628zm40 22h30v53h-30z" fill="#BDDCD1"/>
+  <path d="M568 454h212" stroke="#D6EBE1" stroke-width="21" stroke-linecap="round"/>
+  <circle cx="706" cy="109" r="8" fill="#D7F2E8" opacity=".8"/>
+  <circle cx="748" cy="188" r="5" fill="#D7F2E8" opacity=".55"/>
+  <circle cx="497" cy="99" r="6" fill="#D7F2E8" opacity=".6"/>
+</svg>
