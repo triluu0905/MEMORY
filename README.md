@@ -16,7 +16,7 @@ git clone https://github.com/triluu0905/MEMORY.git YOUR_FOLDER
 cd YOUR_FOLDER
 npm ci
 cp .env.example .env
-docker compose up -d db
+docker compose up -d --wait db
 npm run build
 npm start
 ```
@@ -33,7 +33,7 @@ Copy-Item .env.example .env
 
 ```sh
 cd YOUR_FOLDER
-docker compose up -d db
+docker compose up -d --wait db
 npm start
 ```
 
