@@ -5,6 +5,7 @@ import { createReadStream } from 'node:fs';
 import { resolve, extname, join } from 'node:path';
 import { randomUUID, randomBytes, scryptSync, createHash, timingSafeEqual } from 'node:crypto';
 import pg from 'pg';
+import nodemailer from 'nodemailer';
 
 const root = resolve(import.meta.dirname, '../..');
 const uploads = resolve(root, process.env.UPLOAD_DIR || 'uploads');
@@ -13,10 +14,20 @@ const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const maxJson = 5 * 1024 * 1024;
 const maxFile = 20 * 1024 * 1024;
 const maxUserFiles = 1024 * 1024 * 1024;
+const resetTtlSeconds = 60 * 60;
 const attempts = new Map<string, { count: number; reset: number }>();
 const mime: Record<string, string> = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' };
 type Account = { id: string; email: string; name: string; lab: string };
 type HttpError = Error & { status?: number };
+const appOrigin = (process.env.APP_ORIGIN || `http://127.0.0.1:${process.env.PORT || 3000}`).replace(/\/$/, '');
+const smtp = process.env.SMTP_HOST && process.env.MAIL_FROM
+  ? nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined
+    })
+  : null;
 
 function send(res: ServerResponse, status: number, value: unknown, headers: Record<string, string> = {}) {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...headers });
@@ -24,6 +35,22 @@ function send(res: ServerResponse, status: number, value: unknown, headers: Reco
 }
 function hash(value: string) { return createHash('sha256').update(value).digest('hex'); }
 function password(value: string, salt: string) { return scryptSync(value, salt, 64); }
+function validPassword(value: string) { return value.length >= 12 && value.length <= 256; }
+async function sendPasswordReset(email: string, token: string): Promise<void> {
+  const url = `${appOrigin}/reset-password.html?token=${encodeURIComponent(token)}`;
+  if (!smtp) {
+    if (process.env.NODE_ENV !== 'production') console.info(`Password reset link for ${email}: ${url}`);
+    else console.error('Password reset email was not sent: SMTP_HOST and MAIL_FROM are required.');
+    return;
+  }
+  await smtp.sendMail({
+    from: process.env.MAIL_FROM,
+    to: email,
+    subject: 'Đặt lại mật khẩu MEMORY',
+    text: `Bạn đã yêu cầu đặt lại mật khẩu MEMORY. Mở liên kết này trong vòng 1 giờ: ${url}`,
+    html: `<p>Bạn đã yêu cầu đặt lại mật khẩu MEMORY.</p><p><a href="${url}">Đặt lại mật khẩu</a></p><p>Liên kết hết hạn sau 1 giờ. Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>`
+  });
+}
 function limited(req: IncomingMessage): boolean {
   const key = req.socket.remoteAddress || 'unknown', now = Date.now();
   const entry = attempts.get(key);
@@ -85,7 +112,7 @@ async function api(req: IncomingMessage, res: ServerResponse, url: URL): Promise
     const email = String(input.email || '').trim().toLowerCase();
     const name = String(input.name || '').trim();
     const pass = String(input.password || '');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !name || pass.length < 12 || pass.length > 256) return send(res, 400, { error: 'Name, email and password of at least 12 characters required' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !name || !validPassword(pass)) return send(res, 400, { error: 'Name, email and password of at least 12 characters required' });
     const id = randomUUID(), salt = randomBytes(16).toString('hex');
     try {
       await pool.query('INSERT INTO users(id,email,name,password_salt,password_hash) VALUES($1,$2,$3,$4,$5)', [id, email, name, salt, password(pass, salt).toString('hex')]);
@@ -102,6 +129,42 @@ async function api(req: IncomingMessage, res: ServerResponse, url: URL): Promise
     const stored = found ? Buffer.from(found.password_hash, 'hex') : Buffer.alloc(64);
     if (!found || !timingSafeEqual(candidate, stored)) return send(res, 401, { error: 'Invalid credentials' });
     return login(res, found, !!input.remember);
+  }
+  if (url.pathname === '/api/forgot-password' && method === 'POST') {
+    if (limited(req)) return send(res, 429, { error: 'Too many attempts' });
+    const email = String((await jsonBody(req)).email || '').trim().toLowerCase();
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      const { rows } = await pool.query<Account>('SELECT id,email,name,lab FROM users WHERE email=$1', [email]);
+      const account = rows[0];
+      if (account) {
+        const token = randomBytes(32).toString('base64url');
+        await pool.query('DELETE FROM password_reset_tokens WHERE user_id=$1 OR expires_at<=now()', [account.id]);
+        await pool.query("INSERT INTO password_reset_tokens(token_hash,user_id,expires_at) VALUES($1,$2,now()+($3 * interval '1 second'))", [hash(token), account.id, resetTtlSeconds]);
+        await sendPasswordReset(account.email, token).catch(error => console.error('Password reset email failed:', error));
+      }
+    }
+    return send(res, 202, { message: 'Nếu email tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu.' });
+  }
+  if (url.pathname === '/api/reset-password' && method === 'POST') {
+    const input = await jsonBody(req);
+    const token = String(input.token || '');
+    const nextPassword = String(input.password || '');
+    if (!token || !validPassword(nextPassword)) return send(res, 400, { error: 'Mật khẩu phải có từ 12 đến 256 ký tự.' });
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows } = await client.query<{ user_id: string }>('SELECT user_id FROM password_reset_tokens WHERE token_hash=$1 AND expires_at>now() FOR UPDATE', [hash(token)]);
+      if (!rows[0]) { await client.query('ROLLBACK'); return send(res, 400, { error: 'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.' }); }
+      const salt = randomBytes(16).toString('hex');
+      await client.query('UPDATE users SET password_salt=$1,password_hash=$2 WHERE id=$3', [salt, password(nextPassword, salt).toString('hex'), rows[0].user_id]);
+      await client.query('DELETE FROM sessions WHERE user_id=$1', [rows[0].user_id]);
+      await client.query('DELETE FROM password_reset_tokens WHERE user_id=$1', [rows[0].user_id]);
+      await client.query('COMMIT');
+      return send(res, 200, { ok: true });
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw error;
+    } finally { client.release(); }
   }
   const account = await user(req);
   if (!account) return send(res, 401, { error: 'Sign in required' });

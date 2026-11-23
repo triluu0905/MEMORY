@@ -10,8 +10,8 @@ document.getElementById('tg')!.addEventListener('click', () => {
 });
 document.querySelectorAll<HTMLButtonElement>('[data-soc]').forEach(button => { button.disabled = true; button.title = 'Chưa hỗ trợ'; });
 document.getElementById('useDemo')?.remove();
-document.getElementById('fg')?.addEventListener('click', event => { event.preventDefault(); message('Chức năng đặt lại mật khẩu chưa có. Liên hệ quản trị viên.'); });
 if (new URLSearchParams(location.search).has('out')) message('Bạn đã đăng xuất.');
+if (new URLSearchParams(location.search).has('reset')) { const el = document.getElementById('msg')!; el.className = 'msg on'; el.textContent = 'Mật khẩu đã được đặt lại. Hãy đăng nhập bằng mật khẩu mới.'; }
 void auth.restore().then(user => { if (user) location.replace('app.html'); }).catch(error => message(String(error)));
 document.getElementById('f')!.addEventListener('submit', async event => {
   event.preventDefault();

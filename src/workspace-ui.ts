@@ -204,7 +204,7 @@ function vProject(){
  h+='<div class="card" style="overflow:hidden">';
  if(!ns){h+='<div class="empty"><svg class="ill" viewBox="0 0 120 90" fill="none" stroke="#5E9C8F" stroke-width="1.5"><path d="M46 10h28M50 10v24L30 72a6 6 0 0 0 5 9h50a6 6 0 0 0 5-9L70 34V10"/><path d="M38 60h44" stroke-dasharray="3 3"/><circle cx="56" cy="68" r="3"/><circle cx="66" cy="63" r="2"/><circle cx="60" cy="50" r="1.5"/></svg><h3>Chưa có mẫu thí nghiệm</h3><p>'+(p.children.length?'Dự án này chứa các dự án con ở trên. Bạn vẫn có thể thêm mẫu trực tiếp tại đây.':'Thêm mẫu đầu tiên để bắt đầu ghi chép quy trình, hóa chất và kết quả.')+'</p><button class="btn pri" data-act="addSample"><svg class="i"><use href="#i-plus"/></svg>Thêm mẫu</button></div></div>';}
  else{
- h+='<div class="tblwrap"><table class="lab"><thead><tr>'+[['No.','',1],['Step','',1],['Ngày',''],['Procedure',''],['Hóa chất',''],['Định lượng',''],['Conditions',''],['Result',''],['Hình ảnh',''],['Ghi chú','']].map(function(c){return '<th'+(c[2]?' class="nar"':'')+'><span>'+c[0]+(c[1]?' <em>'+c[1]+'</em>':'')+'</span></th>'}).join('')+'</tr></thead><tbody>';
+ h+='<div class="tblwrap"><table class="lab"><thead><tr>'+[['No.','',1],['Step','',1],['Ngày',''],['Procedure',''],['Hóa chất',''],['Định lượng',''],['Nồng độ',''],['Điều kiện',''],['Result',''],['Hình ảnh',''],['Ghi chú','']].map(function(c){return '<th'+(c[2]?' class="nar"':'')+'><span>'+c[0]+(c[1]?' <em>'+c[1]+'</em>':'')+'</span></th>'}).join('')+'</tr></thead><tbody>';
  p.samples.forEach(function(s){s.steps.forEach(function(st,i){h+='<tr data-sid="'+s.id+'">';
   if(i===0)h+='<td class="no" rowspan="'+s.steps.length+'"><input value="'+esc(s.code)+'" data-sample="'+s.id+'" aria-label="Mã mẫu"><div class="na"><button class="btn sm" data-act="addStep" data-sample="'+s.id+'">+ Bước</button><button class="btn sm dg" data-act="delSample" data-sample="'+s.id+'">Xóa</button></div></td>';
   h+='<td class="st">'+(i+1)+(s.steps.length>1?'<button class="x" data-act="delStep" data-step="'+st.id+'" aria-label="Xóa bước"><svg class="i" style="width:14px;height:14px"><use href="#i-trash"/></svg></button>':'')+'</td>';
@@ -212,12 +212,13 @@ function vProject(){
   h+='<td style="width:220px">'+procCell(st)+'</td>';
   h+='<td style="width:190px"><div class="chl">'+st.chems.map(function(c,k){return '<div class="chr"><input value="'+esc(c.name)+'" placeholder="+ Hóa chất '+(k+1)+'" data-step="'+st.id+'" data-path="chems.'+k+'.name"><button class="rm" data-act="delChem" data-step="'+st.id+'" data-k="'+k+'" aria-label="Xóa">×</button></div>'}).join('')+'<button class="addc" data-act="addChem" data-step="'+st.id+'">+ Hóa chất</button></div></td>';
   h+='<td style="width:150px"><div class="chl">'+st.chems.map(function(c,k){return '<div class="qr"><input value="'+esc(c.amount)+'" placeholder="0" inputmode="decimal" data-step="'+st.id+'" data-path="chems.'+k+'.amount"><select data-step="'+st.id+'" data-path="chems.'+k+'.unit">'+opts(U.amt,c.unit)+'</select></div>'}).join('')+(st.chems.length?'<div style="height:28px"></div>':'<div class="qcap"><span>—</span></div>')+'</div></td>';
-  h+='<td style="width:230px">'+condSum(st)+'</td>';
+  h+='<td style="width:190px">'+concSum(st)+'</td>';
+  h+='<td style="width:210px">'+condSum(st)+'</td>';
   h+='<td style="width:230px">'+resSum(st)+'</td>';
   h+='<td style="width:170px">'+imgCell(st)+'</td>';
   h+='<td style="width:200px"><textarea class="ta" placeholder="Text here" data-step="'+st.id+'" data-path="note">'+esc(st.note)+'</textarea></td>';
   h+='</tr>'})});
- h+='<tr class="addrow"><td colspan="10"><button class="btn" data-act="addSample"><svg class="i"><use href="#i-plus"/></svg>Thêm mẫu</button><span class="legendrow" style="display:inline-flex;margin-left:14px"><span>Rê chuột vào cột <b>No.</b> để thêm bước hoặc xóa mẫu</span><span><kbd>/</kbd> tìm kiếm</span></span></td></tr>';
+ h+='<tr class="addrow"><td colspan="11"><button class="btn" data-act="addSample"><svg class="i"><use href="#i-plus"/></svg>Thêm mẫu</button><span class="legendrow" style="display:inline-flex;margin-left:14px"><span>Rê chuột vào cột <b>No.</b> để thêm bước hoặc xóa mẫu</span><span><kbd>/</kbd> tìm kiếm</span></span></td></tr>';
  h+='</tbody></table></div></div>';}
  return h+'</div>';
 }
@@ -226,13 +227,17 @@ function dateCell(st){if(!st.date)st.date=today();return '<span class="dtl">Ngà
 function procCell(st){var f=st.procFile;
  return (f?'<div class="fchip"><span class="ex">'+esc(ext(f.name))+'</span><a href="'+STORE.url(f.id)+'" title="Tải file">'+esc(f.name)+'</a><button data-act="rmProcFile" data-step="'+st.id+'" aria-label="Gỡ file">×</button></div>':'<button class="fbtn" data-act="procFile" data-step="'+st.id+'"><svg class="i"><use href="#i-upload"/></svg>File import</button>')+
  '<span class="or">hoặc</span><textarea class="ta" placeholder="Text here" data-step="'+st.id+'" data-path="procText">'+esc(st.procText)+'</textarea>'}
-function condSum(st){var c=st.cond||{},env=[],conc=[];
- COND.forEach(function(k){var v=k[0]==='pH'?c.pH:c[k[0]]&&c[k[0]].v;if(v!==undefined&&v!==''&&v!=null)env.push([k[1],k[3],v,k[0]==='pH'?'':(k[2]==='%'?'%':c[k[0]].u)])});
+function concSum(st){var c=st.cond||{},conc=[];
  st.chems.forEach(function(ch){var x=c.conc&&c.conc[ch.id];if(x&&x.v!==''&&x.v!=null)conc.push([ch.name||'Hóa chất',x.v,x.u])});
- var btn='<button class="pbtn" data-act="cond" data-step="'+st.id+'"><svg class="i"><use href="#i-edit"/></svg>'+(env.length||conc.length?'Sửa điều kiện':'Nhập điều kiện')+'</button>';
- if(!env.length&&!conc.length)return '<div class="pcard empty"><span class="pe">Chưa có điều kiện</span>'+btn+'</div>';
+ var btn='<button class="pbtn" data-act="cond" data-step="'+st.id+'"><svg class="i"><use href="#i-edit"/></svg>'+(conc.length?'Sửa nồng độ':'Nhập nồng độ')+'</button>';
+ if(!conc.length)return '<div class="pcard empty"><span class="pe">Chưa có nồng độ</span>'+btn+'</div>';
+ return '<div class="pcard"><div class="plist"><span class="ph">Theo hóa chất</span>'+conc.map(function(r){return '<div><span title="'+esc(r[0])+'">'+esc(r[0])+'</span><b>'+esc(r[1])+' <em>'+esc(r[2])+'</em></b></div>'}).join('')+'</div>'+btn+'</div>'}
+function condSum(st){var c=st.cond||{},env=[];
+ COND.forEach(function(k){var v=k[0]==='pH'?c.pH:c[k[0]]&&c[k[0]].v;if(v!==undefined&&v!==''&&v!=null)env.push([k[1],k[3],v,k[0]==='pH'?'':(k[2]==='%'?'%':c[k[0]].u)])});
+ var btn='<button class="pbtn" data-act="cond" data-step="'+st.id+'"><svg class="i"><use href="#i-edit"/></svg>'+(env.length?'Sửa điều kiện':'Nhập điều kiện')+'</button>';
+ if(!env.length)return '<div class="pcard empty"><span class="pe">Chưa có điều kiện</span>'+btn+'</div>';
  return '<div class="pcard">'+(env.length?'<div class="pgrid">'+env.map(function(r){return '<div class="pp"><span><i>'+esc(r[1])+'</i>'+esc(r[0])+'</span><b>'+esc(r[2])+(r[3]?' <em>'+esc(r[3])+'</em>':'')+'</b></div>'}).join('')+'</div>':'')+
-  (conc.length?'<div class="plist"><span class="ph">Nồng độ</span>'+conc.map(function(r){return '<div><span title="'+esc(r[0])+'">'+esc(r[0])+'</span><b>'+esc(r[1])+' <em>'+esc(r[2])+'</em></b></div>'}).join('')+'</div>':'')+btn+'</div>'}
+  btn+'</div>'}
 function resSum(st){var r=st.res||{},has=(r.m0&&r.m0.v)||(r.m1&&r.m1.v)||r.yield;
  var btn='<button class="pbtn" data-act="res" data-step="'+st.id+'"><svg class="i"><use href="#i-edit"/></svg>'+(has?'Sửa kết quả':'Nhập kết quả')+'</button>';
  if(!has)return '<div class="pcard empty"><span class="pe">Chưa có kết quả</span>'+btn+'</div>';
@@ -250,7 +255,7 @@ function dhead(tag,title){return '<div class="dh"><div><span class="tagm">'+tag+
 function qf(stId,path,v,u,list,ph="0"){return '<div class="qr"><input data-step="'+stId+'" data-path="'+path+'.v" value="'+esc(v||'')+'" placeholder="'+(ph||'0')+'" inputmode="decimal"><select data-step="'+stId+'" data-path="'+path+'.u">'+opts(list,u)+'</select></div>'}
 function condDlg(id){var f=findStep(id);if(!f)return;var st=f.st,c=st.cond=st.cond||{};c.conc=c.conc||{};var idx=f.s.steps.indexOf(st)+1;
  var chemRows=st.chems.length?st.chems.map(function(ch,k){var x=c.conc[ch.id]||{};return '<div class="fr"><label><i>C'+(k+1)+'</i>'+esc(ch.name||'Hóa chất '+(k+1))+'</label>'+qf(id,'cond.conc.'+ch.id,x.v,x.u||'M',U.conc)+'</div>'}).join(''):'<div class="hint">Bước này chưa có hóa chất. Thêm hóa chất ở cột <b>Hóa chất</b> để nhập nồng độ.</div>';
- openDlg(dhead('Conditions · '+esc(f.s.code)+' / bước '+idx,'Điều kiện thí nghiệm')+'<div class="db">'+
+ openDlg(dhead('Điều kiện · '+esc(f.s.code)+' / bước '+idx,'Điều kiện và nồng độ')+'<div class="db">'+
  '<div class="fs"><small>Nồng độ hóa chất</small>'+chemRows+'</div>'+
  '<div class="fs"><small>Môi trường</small>'+
  '<div class="fr"><label><i>pH</i>pH</label><div class="qr"><input data-step="'+id+'" data-path="cond.pH" value="'+esc(c.pH||'')+'" placeholder="7.0" inputmode="decimal"><select disabled><option>—</option></select></div></div>'+
@@ -258,7 +263,7 @@ function condDlg(id){var f=findStep(id);if(!f)return;var st=f.st,c=st.cond=st.co
  '<div class="fr"><label><i>t</i>Thời gian</label>'+qf(id,'cond.time',c.time&&c.time.v,c.time&&c.time.u||'min',U.time,'30')+'</div>'+
  '<div class="fr"><label><i>RH</i>Độ ẩm</label>'+qf(id,'cond.hum',c.hum&&c.hum.v,'%',['%'],'50')+'</div>'+
  '<div class="fr"><label><i>P</i>Áp suất</label>'+qf(id,'cond.pres',c.pres&&c.pres.v,c.pres&&c.pres.u||'atm',U.pres,'1')+'</div></div>'+
- '<div class="hint">Thông tin bạn điền sẽ được tổng hợp thành danh sách trong ô <b>Conditions</b> của bảng.</div></div>'+
+ '<div class="hint">Nồng độ và điều kiện môi trường sẽ hiển thị ở hai cột riêng trong bảng dự án.</div></div>'+
  '<div class="df"><button class="btn" data-act="clearCond" data-step="'+id+'">Xóa hết</button><button class="btn pri" data-act="close">Xong</button></div>',function(){touch(f.p);save();render()})}
 function resDlg(id){var f=findStep(id);if(!f)return;var st=f.st,r=st.res=st.res||{};var idx=f.s.steps.indexOf(st)+1;
  openDlg(dhead('Result · '+esc(f.s.code)+' / bước '+idx,'Kết quả thí nghiệm')+'<div class="db">'+
@@ -641,7 +646,8 @@ document.addEventListener('keydown',function(e){var t=(e.target as HTMLInputElem
 
 /* ---------- EXPORT ---------- */
 var XO={pid:null,sub:true,info:true,table:true,img:true,charts:true,yield:true,fmt:'pdf'};
-function condTxt(st){var c=st.cond||{},a=[];COND.forEach(function(k){var v=k[0]==='pH'?c.pH:c[k[0]]&&c[k[0]].v;if(v!==undefined&&v!==''&&v!=null)a.push(k[1]+': '+v+(k[0]==='pH'?'':' '+(k[2]==='%'?'%':c[k[0]].u)))});st.chems.forEach(function(ch){var x=c.conc&&c.conc[ch.id];if(x&&x.v)a.push('['+(ch.name||'?')+']: '+x.v+' '+x.u)});return a}
+function condTxt(st){var c=st.cond||{},a=[];COND.forEach(function(k){var v=k[0]==='pH'?c.pH:c[k[0]]&&c[k[0]].v;if(v!==undefined&&v!==''&&v!=null)a.push(k[1]+': '+v+(k[0]==='pH'?'':' '+(k[2]==='%'?'%':c[k[0]].u)))});return a}
+function concTxt(st){var c=st.cond||{},a=[];st.chems.forEach(function(ch){var x=c.conc&&c.conc[ch.id];if(x&&x.v)a.push((ch.name||'?')+': '+x.v+' '+x.u)});return a}
 function resTxt(st){var r=st.res||{},a=[];if(r.m0&&r.m0.v)a.push('m₀: '+r.m0.v+' '+r.m0.u);if(r.m1&&r.m1.v)a.push('m₁: '+r.m1.v+' '+r.m1.u);if(r.yield)a.push('η: '+r.yield+' %');return a}
 function xList(){var p=findP(XO.pid);if(!p)return [];var a=[p];if(XO.sub)walk(p.children,function(c){a.push(c)});return a}
 function reportHTML(){var list=xList();if(!list.length)return '<p>Chưa chọn dự án.</p>';var root=list[0],now=new Date();
@@ -651,9 +657,9 @@ function reportHTML(){var list=xList();if(!list.length)return '<p>Chưa chọn d
  if(XO.info)h+='<div class="rp-k"><div><small>Trạng thái</small><b>'+(root.status==='done'?'Hoàn thành':'Đang thực hiện')+'</b></div><div><small>Dự án con</small><b>'+(list.length-1)+'</b></div><div><small>Mẫu</small><b>'+ns+'</b></div><div><small>Bước</small><b>'+nst+'</b></div><div><small>Hiệu suất TB</small><b>'+(yl.length?fmt(yl.reduce(function(a,b){return a+b},0)/yl.length,1)+' %':'—')+'</b></div><div><small>Cập nhật</small><b>'+fdate(root.updated)+'</b></div></div>';
  if(XO.yield){var bars=[];list.forEach(function(p){p.samples.forEach(function(s){var y=finalYield(s);if(y!=null)bars.push({c:s.code,y:y,p:codeOf(p)})})});if(bars.length){var m=Math.max.apply(null,bars.map(function(b){return b.y}));h+='<h2>Hiệu suất theo mẫu</h2><div class="rp-bars">'+bars.map(function(b){return '<div><span>'+esc(b.c)+' <em>'+b.p+'</em></span><i><b style="width:'+(b.y/m*100)+'%"></b></i><strong>'+fmt(b.y,1)+' %</strong></div>'}).join('')+'</div>'}}
  if(XO.table)list.forEach(function(p){if(!p.samples.length&&list.length>1)return;h+='<h2>'+codeOf(p)+' · '+esc(p.name)+' <em>'+(p.status==='done'?'Hoàn thành':'Đang thực hiện')+'</em></h2>';if(!p.samples.length){h+='<p class="rp-e">Không có mẫu thí nghiệm.</p>';return}
-  h+='<table class="rp-tb"><thead><tr><th>No.</th><th>Step</th><th>Ngày</th><th>Procedure</th><th>Hóa chất · Định lượng</th><th>Conditions</th><th>Result</th><th>Ghi chú</th></tr></thead><tbody>';
-  p.samples.forEach(function(s){s.steps.forEach(function(st,i){h+='<tr>'+(i===0?'<td rowspan="'+s.steps.length+'" class="no">'+esc(s.code)+'</td>':'')+'<td class="c">'+(i+1)+'</td><td class="c">'+fdate(st.date)+'</td><td>'+esc(st.procText)+(st.procFile?'<div class="f">📎 '+esc(st.procFile.name)+'</div>':'')+'</td><td>'+st.chems.filter(function(c){return c.name}).map(function(c){return esc(c.name)+(c.amount?' · <b>'+esc(c.amount)+' '+esc(c.unit)+'</b>':'')}).join('<br>')+'</td><td>'+condTxt(st).map(esc).join('<br>')+'</td><td>'+resTxt(st).map(esc).join('<br>')+'</td><td>'+esc(st.note)+'</td></tr>';
-   if(XO.img&&st.images.some(function(im){return im.src}))h+='<tr class="im"><td colspan="7"><div>'+st.images.filter(function(im){return im.src}).map(function(im){return '<figure><img src="'+im.src+'" alt=""><figcaption>'+esc(im.name)+'</figcaption></figure>'}).join('')+'</div></td></tr>'})});
+  h+='<table class="rp-tb"><thead><tr><th>No.</th><th>Step</th><th>Ngày</th><th>Procedure</th><th>Hóa chất · Định lượng</th><th>Nồng độ</th><th>Điều kiện</th><th>Result</th><th>Ghi chú</th></tr></thead><tbody>';
+  p.samples.forEach(function(s){s.steps.forEach(function(st,i){h+='<tr>'+(i===0?'<td rowspan="'+s.steps.length+'" class="no">'+esc(s.code)+'</td>':'')+'<td class="c">'+(i+1)+'</td><td class="c">'+fdate(st.date)+'</td><td>'+esc(st.procText)+(st.procFile?'<div class="f">📎 '+esc(st.procFile.name)+'</div>':'')+'</td><td>'+st.chems.filter(function(c){return c.name}).map(function(c){return esc(c.name)+(c.amount?' · <b>'+esc(c.amount)+' '+esc(c.unit)+'</b>':'')}).join('<br>')+'</td><td>'+concTxt(st).map(esc).join('<br>')+'</td><td>'+condTxt(st).map(esc).join('<br>')+'</td><td>'+resTxt(st).map(esc).join('<br>')+'</td><td>'+esc(st.note)+'</td></tr>';
+   if(XO.img&&st.images.some(function(im){return im.src}))h+='<tr class="im"><td colspan="9"><div>'+st.images.filter(function(im){return im.src}).map(function(im){return '<figure><img src="'+im.src+'" alt=""><figcaption>'+esc(im.name)+'</figcaption></figure>'}).join('')+'</div></td></tr>'})});
   h+='</tbody></table>'});
  if(XO.charts){var ids=list.map(function(p){return p.id}),cs=charts().filter(function(c){return ids.indexOf(c.project)>-1});if(cs.length){h+='<h2>Biểu đồ</h2>';cs.forEach(function(c){var r=chartSVG(c,760,440);h+='<div class="rp-c">'+r.svg+'<div class="rp-cr">'+(r.o.res||'')+'</div></div>'})}}
  h+='<div class="rp-f">Xuất từ MEMORY · '+now.toLocaleString('vi-VN')+' · Dữ liệu thuộc '+esc(S.user.lab||'phòng thí nghiệm')+'</div>';
@@ -828,9 +834,9 @@ document.addEventListener('click',function(e){var el=(e.target as HTMLInputEleme
 document.addEventListener('focusout',function(e){if((e.target as HTMLInputElement).id==='ptitle'&&!(e.target as HTMLInputElement).value.trim()){var p=findP(route.id);p.name='Dự án chưa đặt tên';(e.target as HTMLInputElement).value=p.name;save();renderTree()}});
 $('scrim').addEventListener('transitionend',function(){if(!$('scrim').classList.contains('on'))$('scrim').classList.remove('lightbox')});
 function dl(name,data,type="application/octet-stream"){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500)}
-function csv(p){var q=function(v){v=String(v==null?'':v);return /[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};var rows=[['No.','Step','Ngày','Procedure','Procedure file','Hóa chất','Định lượng','Conditions','m0','m1','Hiệu suất (%)','Hình ảnh','Ghi chú']];
- p.samples.forEach(function(s){s.steps.forEach(function(st,i){var c=st.cond||{};var cs2=COND.map(function(k){var v=k[0]==='pH'?c.pH:c[k[0]]&&c[k[0]].v;return v?k[3]+'='+v+(k[0]==='pH'?'':' '+(c[k[0]].u||'%')):''}).filter(Boolean).concat(st.chems.map(function(ch){var x=c.conc&&c.conc[ch.id];return x&&x.v?'['+ch.name+']='+x.v+' '+x.u:''}).filter(Boolean)).join('; ');var r=st.res||{};
-  rows.push([s.code,i+1,fdate(st.date),st.procText,st.procFile?st.procFile.name:'',st.chems.map(function(x){return x.name}).join('; '),st.chems.map(function(x){return x.amount+' '+x.unit}).join('; '),cs2,r.m0&&r.m0.v?r.m0.v+' '+r.m0.u:'',r.m1&&r.m1.v?r.m1.v+' '+r.m1.u:'',r.yield||'',st.images.map(function(x){return x.name}).join('; '),st.note])})});
+function csv(p){var q=function(v){v=String(v==null?'':v);return /[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};var rows=[['No.','Step','Ngày','Procedure','Procedure file','Hóa chất','Định lượng','Nồng độ','Điều kiện','m0','m1','Hiệu suất (%)','Hình ảnh','Ghi chú']];
+ p.samples.forEach(function(s){s.steps.forEach(function(st,i){var c=st.cond||{};var env=COND.map(function(k){var v=k[0]==='pH'?c.pH:c[k[0]]&&c[k[0]].v;return v?k[3]+'='+v+(k[0]==='pH'?'':' '+(c[k[0]].u||'%')):''}).filter(Boolean).join('; ');var conc=concTxt(st).join('; ');var r=st.res||{};
+  rows.push([s.code,i+1,fdate(st.date),st.procText,st.procFile?st.procFile.name:'',st.chems.map(function(x){return x.name}).join('; '),st.chems.map(function(x){return x.amount+' '+x.unit}).join('; '),conc,env,r.m0&&r.m0.v?r.m0.v+' '+r.m0.u:'',r.m1&&r.m1.v?r.m1.v+' '+r.m1.u:'',r.yield||'',st.images.map(function(x){return x.name}).join('; '),st.note])})});
  return rows.map(function(r){return r.map(q).join(',')}).join('\n')}
 
 function xEvents(e){var t=(e.target as HTMLInputElement);if(t.dataset.xo){XO[t.dataset.xo]=t.checked;$('paper').innerHTML=reportHTML();$('xinfo').textContent=xList().length+' dự án · A4';return true}if(t.id==='xp'){XO.pid=t.value;$('paper').innerHTML=reportHTML();$('xinfo').textContent=xList().length+' dự án · A4';return true}return false}

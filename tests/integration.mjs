@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import test from 'node:test';
 import pg from 'pg';
 
@@ -84,6 +85,16 @@ test('HTTP API persists and isolates user data', async () => {
     assert.equal((await call('/api/login', 'POST', { email: emailA, password: 'strong-password-123' }, undefined, { origin: 'https://other.example' })).status, 403);
     assert.equal((await call('/api/logout', 'POST', undefined, a.cookie)).status, 200);
     assert.equal((await call('/api/me', 'GET', undefined, a.cookie)).status, 401);
+    assert.equal((await call('/api/forgot-password', 'POST', { email: emailA })).status, 202);
+    assert.equal((await call('/api/forgot-password', 'POST', { email: `missing-${suffix}@example.test` })).status, 202);
+    assert.equal((await pool.query('SELECT count(*)::integer AS count FROM password_reset_tokens WHERE user_id=$1', [a.data.user.id])).rows[0].count, 1);
+    const resetToken = `known-reset-token-${suffix}`;
+    await pool.query('DELETE FROM password_reset_tokens WHERE user_id=$1', [a.data.user.id]);
+    await pool.query("INSERT INTO password_reset_tokens(token_hash,user_id,expires_at) VALUES($1,$2,now() + interval '1 hour')", [createHash('sha256').update(resetToken).digest('hex'), a.data.user.id]);
+    assert.equal((await call('/api/reset-password', 'POST', { token: resetToken, password: 'changed-password-456' })).status, 200);
+    assert.equal((await call('/api/login', 'POST', { email: emailA, password: 'strong-password-123' })).status, 401);
+    assert.equal((await call('/api/login', 'POST', { email: emailA, password: 'changed-password-456' })).status, 200);
+    assert.equal((await call('/api/reset-password', 'POST', { token: resetToken, password: 'another-password-789' })).status, 400);
   } finally {
     if (server && server.exitCode === null && server.signalCode === null) {
       server.kill('SIGTERM');

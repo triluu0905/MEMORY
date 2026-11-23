@@ -68,6 +68,38 @@ Nếu bạn đã có PostgreSQL riêng, đổi `DATABASE_URL` trong `.env`, rồ
 psql "$DATABASE_URL" -f server/schema.sql
 ```
 
+Sau khi pull một phiên bản mới có thay đổi database, chạy migration an toàn này. Nó chỉ tạo bảng/index còn thiếu và không xóa dữ liệu:
+
+```sh
+docker compose exec -T db psql -U memory -d memory -f /docker-entrypoint-initdb.d/001-schema.sql
+```
+
+## Email cho quên mật khẩu
+
+Tính năng **Quên mật khẩu** tạo một liên kết dùng một lần, hết hạn sau 1 giờ. Token chỉ được lưu dạng hash. Khi đặt mật khẩu mới, mọi phiên đăng nhập cũ của tài khoản đó sẽ bị thu hồi.
+
+Để gửi email thật trên server, thêm các biến sau vào `.env`. Không commit file này lên Git.
+
+```dotenv
+APP_ORIGIN=https://memory.example.com
+SMTP_HOST=smtp.your-provider.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-smtp-user
+SMTP_PASS=your-smtp-password-or-api-key
+MAIL_FROM="MEMORY <no-reply@your-domain.com>"
+```
+
+Bạn cần cấu hình các mục sau tại nhà cung cấp email SMTP:
+
+1. Tạo SMTP credential hoặc API key có quyền gửi email.
+2. Xác minh domain dùng trong `MAIL_FROM`.
+3. Thêm DNS SPF và DKIM do nhà cung cấp cấp. Nên thêm DMARC sau khi xác minh gửi nhận ổn định.
+4. Đặt `APP_ORIGIN` là URL HTTPS công khai chính xác của app. Link reset sẽ trỏ về URL này.
+5. Chọn đúng cặp cổng và bảo mật: thường `587` với `SMTP_SECURE=false` hoặc `465` với `SMTP_SECURE=true`. Làm theo hướng dẫn của nhà cung cấp.
+
+Ở local development, SMTP là tùy chọn. Nếu không có `SMTP_HOST` và `MAIL_FROM`, app không gửi mail thật mà in reset link vào log của server để bạn thử luồng. Production phải cấu hình SMTP và `APP_ORIGIN` HTTPS trước khi bật tính năng cho người dùng.
+
 ## Kiểm thử
 
 ```sh
