@@ -18,13 +18,9 @@ export const auth = {
     current = result.user;
     return current;
   },
-  async requestPasswordReset(email: string): Promise<void> {
-    await request('/forgot-password', json('POST', { email }));
-  },
-  async resetPassword(token: string, password: string): Promise<void> {
-    await request('/reset-password', json('POST', { token, password }));
-  },
-  async update(changes: { name: string; lab: string }): Promise<Account> {
+  async requestPasswordReset(email: string): Promise<void> { await request('/forgot-password', json('POST', { email })); },
+  async resetPassword(token: string, password: string): Promise<void> { await request('/reset-password', json('POST', { token, password })); },
+  async update(changes: { name: string; lab: string; language?: 'vi' | 'en' }): Promise<Account> {
     const result = await request<{ user: Account }>('/me', json('PATCH', changes));
     current = result.user;
     return current;

@@ -1,4 +1,4 @@
-export interface Account { id: string; email: string; name: string; lab: string }
+export interface Account { id: string; email: string; name: string; lab: string; language: 'vi' | 'en' }
 export interface Workspace { projects: unknown[]; charts: unknown[]; [key: string]: unknown }
 
 export class ApiError extends Error {

@@ -64,6 +64,7 @@ test('HTTP API persists and isolates user data', async () => {
     users.push(b.data.user.id);
     assert.equal((await call('/api/me', 'GET', undefined, a.cookie)).data.user.email, emailA);
     assert.equal((await call('/api/workspace', 'GET', undefined, b.cookie)).data.data, null);
+    assert.equal((await call('/api/sample-history?sample=s1&workspace=' + a.data.user.id, 'GET', undefined, b.cookie)).status, 403);
 
     const first = { projects: [{ id: 'p1', name: 'Project', children: [], samples: [] }], charts: [] };
     const second = { projects: [{ ...first.projects[0], name: 'Renamed' }], charts: [] };
@@ -72,6 +73,39 @@ test('HTTP API persists and isolates user data', async () => {
     assert.equal((await call('/api/workspace', 'PUT', { data: first, revision: '1' }, a.cookie)).status, 409);
     assert.equal((await call('/api/workspace', 'GET', undefined, a.cookie)).data.data.projects[0].name, 'Renamed');
     assert.equal((await call('/api/workspace', 'GET', undefined, b.cookie)).data.data, null);
+
+    const workspaceId = a.data.user.id;
+    const invitation = await call(`/api/workspaces/${workspaceId}/invitations`, 'POST', { email: emailB, role: 'editor' }, a.cookie);
+    assert.equal(invitation.status, 201);
+    assert.equal((await call(`/api/workspaces/${workspaceId}/invitations`, 'POST', { email: emailB, role: 'viewer' }, b.cookie)).status, 403);
+    assert.equal((await call('/api/invitations/accept', 'POST', { token: invitation.data.token }, a.cookie)).status, 403);
+    assert.equal((await call('/api/invitations/accept', 'POST', { token: invitation.data.token }, b.cookie)).status, 200);
+    assert.equal((await call('/api/invitations/accept', 'POST', { token: invitation.data.token }, b.cookie)).status, 404);
+    const shared = await call(`/api/workspace?workspace=${workspaceId}`, 'GET', undefined, b.cookie);
+    assert.equal(shared.status, 200);
+    assert.equal(shared.data.data.projects[0].name, 'Renamed');
+    assert.equal((await call(`/api/workspace?workspace=${workspaceId}`, 'PUT', { data: second, revision: shared.data.revision }, b.cookie)).status, 200);
+    const members = await call(`/api/workspaces/${workspaceId}/members`, 'GET', undefined, a.cookie);
+    assert.equal(members.data.members.length, 2);
+    const activities = await call(`/api/workspaces/${workspaceId}/activities`, 'GET', undefined, a.cookie);
+    assert.equal(activities.data.activities[0].type, 'member_joined');
+
+    const sample = { id: 's1', code: 'B1', steps: [{ id: 'st1', date: '2026-11-24', procText: 'Mix', chems: [], cond: {}, res: {}, images: [], note: '' }] };
+    const withSample = { projects: [{ ...second.projects[0], samples: [sample] }], charts: [] };
+    const current = await call(`/api/workspace?workspace=${workspaceId}`, 'GET', undefined, a.cookie);
+    assert.equal((await call(`/api/workspace?workspace=${workspaceId}`, 'PUT', { data: withSample, revision: current.data.revision }, a.cookie)).status, 200);
+    const edited = { projects: [{ ...second.projects[0], samples: [{ ...sample, steps: [{ ...sample.steps[0], procText: 'Mix and heat' }] }] }], charts: [] };
+    const afterCreate = await call(`/api/workspace?workspace=${workspaceId}`, 'GET', undefined, b.cookie);
+    assert.equal((await call(`/api/workspace?workspace=${workspaceId}`, 'PUT', { data: edited, revision: afterCreate.data.revision }, b.cookie)).status, 200);
+    assert.equal((await call(`/api/workspace?workspace=${workspaceId}`, 'PUT', { data: withSample, revision: afterCreate.data.revision }, a.cookie)).status, 409);
+    const history = await call(`/api/sample-history?sample=s1&workspace=${workspaceId}`, 'GET', undefined, a.cookie);
+    assert.equal(history.status, 200);
+    assert.equal(history.data.history.length, 2);
+    assert.equal(history.data.history[0].actor_name, 'Test B');
+    assert.deepEqual(history.data.history[0].changes.find(change => change.field === 'Bước 1 · Quy trình'),
+      { field: 'Bước 1 · Quy trình', before: 'Mix', after: 'Mix and heat' });
+    assert.equal(history.data.history[1].type, 'created');
+    assert.equal(history.data.history[1].actor_name, 'Test A');
 
     const file = new TextEncoder().encode('file-check');
     const uploaded = await call('/api/files', 'POST', file, a.cookie, { 'content-type': 'text/plain', 'x-file-name': 'check.txt' });
