@@ -2,7 +2,7 @@
 
 MEMORY là không gian làm việc phòng thí nghiệm bằng tiếng Việt: quản lý dự án/mẫu thử, ghi quy trình, tính toán, biểu đồ, xuất báo cáo, tài khoản thật và lưu dữ liệu bằng PostgreSQL.
 
-## Chạy trên máy cá nhân — không cần biết code
+## Chạy trên máy cá nhân
 
 Bạn cần cài hai phần mềm miễn phí:
 
