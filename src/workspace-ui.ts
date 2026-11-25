@@ -324,16 +324,32 @@ function condDlg(id){var f=findStep(id);if(!f)return;var st=f.st,c=st.cond=st.co
  '<div class="df"><button class="btn" data-act="clearCond" data-step="'+id+'">Xóa hết</button><button class="btn pri" data-act="close">Xong</button></div>',function(){touch(f.p);save();render()})}
 function resDlg(id){var f=findStep(id);if(!f)return;var st=f.st,r=st.res=st.res||{};var idx=f.s.steps.indexOf(st)+1;
  openDlg(dhead('Kết quả · '+esc(f.s.code)+' / bước '+idx,'Kết quả thí nghiệm')+'<div class="db">'+
+ '<div class="fs"><small>Loại phép tính</small><div class="fr"><label>Hiệu suất cho</label><select class="ipt" id="yType" data-step="'+id+'" data-path="res.ytype"><option value="synth"'+(r.ytype==='extract'?'':' selected')+'>Tổng hợp</option><option value="extract"'+(r.ytype==='extract'?' selected':'')+'>Tách chiết</option></select></div></div>'+
  '<div class="fs"><small>Khối lượng</small>'+
- '<div class="fr"><label><i>m₀</i>Khối lượng ban đầu</label>'+qf(id,'res.m0',r.m0&&r.m0.v,r.m0&&r.m0.u||'g',U.mass)+'</div>'+
+ '<div class="fr"><label><i>m₀</i><span id="m0Lab">Khối lượng ban đầu</span></label>'+qf(id,'res.m0',r.m0&&r.m0.v,r.m0&&r.m0.u||'g',U.mass)+'</div>'+
  '<div class="fr"><label><i>m₁</i>Khối lượng sau phản ứng</label>'+qf(id,'res.m1',r.m1&&r.m1.v,r.m1&&r.m1.u||'g',U.mass)+'</div></div>'+
  '<div class="fs"><small>Hiệu suất</small><div class="fr"><label><i>η</i>Hiệu suất</label><div class="qr"><input id="yIn" data-step="'+id+'" data-path="res.yield" value="'+esc(r.yield||'')+'" placeholder="0" inputmode="decimal"><select disabled><option>%</option></select></div></div>'+
- '<div class="calcy"><div><span class="tagm">Gợi ý · η = m₁ / m₀ × 100</span><div id="ySug" style="font-size:15px;font-weight:700;color:var(--g700);margin-top:4px"></div></div><button class="btn cy sm" data-act="applyY" data-step="'+id+'">Dùng giá trị</button></div>'+
- '<div class="hint">Với phản ứng tổng hợp, hãy nhập <b>m₀</b> là khối lượng lý thuyết của sản phẩm để η là hiệu suất thực tế.</div></div></div>'+
+ '<div class="calcy"><div><span class="tagm">η = m₁ / m₀ × 100</span><div id="ySug" style="font-size:15px;font-weight:700;color:var(--g700);margin-top:4px"></div></div></div>'+
+ '<div class="hint" id="yWarn" style="display:none;color:#9A4A12;background:#FFF4E5;border:1px solid #F0C98A"></div>'+
+ '<div class="hint" id="yHint"></div></div></div>'+
  '<div class="df"><button class="btn" data-act="clearRes" data-step="'+id+'">Xóa hết</button><button class="btn pri" data-act="close">Xong</button></div>',function(){touch(f.p);save();render()});
- sugY(id)}
-function calcY(st){var r=st.res||{};var a=num(r.m0&&r.m0.v),b=num(r.m1&&r.m1.v);if(a==null||b==null||!a)return null;var ua=r.m0.u,ub=r.m1.u;if(isVol(ua)!==isVol(ub))return null;return b*MASSF[ub]/(a*MASSF[ua])*100}
-function sugY(id){var el=$('ySug');if(!el)return;var f=findStep(id),y=calcY(f.st);el.textContent=y==null?'Nhập m₀ và m₁ cùng loại đơn vị (khối lượng hoặc thể tích).':'≈ '+fmt(y,2)+' %';el.dataset.v=y==null?'':fmt(y,2)}
+ syncY(id,false)}
+function calcY(st){var r=st.res||{};var a=num(r.m0&&r.m0.v),b=num(r.m1&&r.m1.v);if(a==null||b==null||!a)return null;var ua=r.m0.u||'g',ub=r.m1.u||'g';if(isVol(ua)!==isVol(ub)||!MASSF[ua]||!MASSF[ub])return null;var y=b*MASSF[ub]/(a*MASSF[ua])*100;return isFinite(y)?y:null}
+function syncY(id,edit){var f=findStep(id);if(!f)return;var st=f.st,r=st.res=st.res||{},y=calcY(st),inp=$('yIn'),info=$('ySug'),warn=$('yWarn'),lab=$('m0Lab'),hint=$('yHint');if(!inp||!info)return;
+ var synth=r.ytype!=='extract';
+ lab.textContent=synth?'Khối lượng lý thuyết của sản phẩm':'Khối lượng ban đầu';
+ hint.textContent=synth?'η tự tính khi nhập m₀ và m₁. Với phản ứng tổng hợp, m₀ là khối lượng lý thuyết của sản phẩm, tính từ chất hết.':'η tự tính khi nhập m₀ và m₁. Với tách chiết, m₀ là khối lượng nguyên liệu ban đầu.';
+ var auto=y!=null&&(edit||!r.yield||r.yAuto);
+ if(auto){var v=fmt(y,2);if(r.yield!==v||!r.yAuto){r.yield=v;r.yAuto=true;st.upd=Date.now();touch(f.p);save()}inp.value=v}
+ else if(y==null&&r.yAuto){r.yield='';r.yAuto=false;inp.value='';st.upd=Date.now();touch(f.p);save()}
+ inp.readOnly=auto;
+ var yv=y!=null?y:num(inp.value);
+ info.textContent=y==null?'Nhập m₀ và m₁ cùng loại đơn vị để tự tính.':'≈ '+fmt(y,2)+' %';
+ var a=num(r.m0&&r.m0.v),b=num(r.m1&&r.m1.v),msg='';
+ if(y==null&&a&&b!=null&&isVol(r.m0.u||'g')!==isVol(r.m1.u||'g'))msg='m₀ và m₁ phải cùng loại đơn vị (khối lượng hoặc thể tích).';
+ else if(yv!=null&&yv>100)msg=synth?'η lớn hơn 100%. Kiểm tra m₀: với phản ứng tổng hợp, m₀ phải là khối lượng lý thuyết của sản phẩm, không phải khối lượng chất đầu. Sản phẩm còn ẩm hoặc lẫn tạp cũng làm m₁ cao.':'η lớn hơn 100%: m₁ lớn hơn m₀. Kiểm tra lại số liệu và đơn vị.';
+ else if(yv!=null&&yv<=0)msg='η phải lớn hơn 0. Kiểm tra m₁ và m₀.';
+ warn.textContent=msg;warn.style.display=msg?'block':'none'}
 
 /* settings / profile / help */
 function settingsDlg(){openDlg(dhead('Cài đặt','Cài đặt không gian làm việc')+'<div class="db"><div class="fs"><small>Tài khoản</small><div class="fr"><label>Tên hiển thị</label><input class="ipt" id="setName" value="'+esc(S.user.name)+'"></div><div class="fr"><label>Mã phòng lab</label><input class="ipt mono" id="setLab" value="'+esc(S.user.lab||'')+'"></div><div class="fr"><label>Ngôn ngữ</label><select class="ipt" id="setLanguage"><option value="vi"'+((S.user.language||'vi')==='vi'?' selected':'')+'>Tiếng Việt</option><option value="en"'+(S.user.language==='en'?' selected':'')+'>English</option></select><button class="btn sm" data-act="exportLanguageMap">Tải bản dịch EN–VI</button></div></div>'+
@@ -811,12 +827,12 @@ var rz;addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(funct
 
 /* ---------- events ---------- */
 document.addEventListener('input',function(e){var t=(e.target as HTMLInputElement);if(route.v==='chart'&&chartEvents(e))return;if(route.v==='export'&&xEvents(e))return;
- if(t.dataset.step&&t.dataset.path){var f=findStep(t.dataset.step);if(!f)return;setPath(f.st,t.dataset.path,t.value);if(t.dataset.path!=='date')f.st.upd=Date.now();touch(f.p);save();if(/^res\.m/.test(t.dataset.path))sugY(t.dataset.step);return}
+ if(t.dataset.step&&t.dataset.path){var f=findStep(t.dataset.step);if(!f)return;setPath(f.st,t.dataset.path,t.value);if(t.dataset.path!=='date')f.st.upd=Date.now();touch(f.p);save();if(t.dataset.path==='res.yield')f.st.res.yAuto=false;if(/^res\.(m|yield)/.test(t.dataset.path))syncY(t.dataset.step,true);return}
  if(t.dataset.sample){walk(S.projects,function(p){p.samples.forEach(function(s){if(s.id===t.dataset.sample){s.code=t.value;touch(p)}})});save();return}
  if(t.id==='ptitle'){var p=findP(route.id);p.name=t.value;touch(p);save();renderTree();crumb(['Dự án'].concat(pathOf(p.id).map(function(x){return x.name})));return}
  if(route.v==='calc')calcEvents(e)});
 document.addEventListener('change',function(e){var t=(e.target as HTMLInputElement);if(route.v==='chart'||route.v==='export')return;
- if(t.dataset.step&&t.dataset.path&&t.tagName==='SELECT'){var f=findStep(t.dataset.step);setPath(f.st,t.dataset.path,t.value);f.st.upd=Date.now();save();sugY(t.dataset.step);return}
+ if(t.dataset.step&&t.dataset.path&&t.tagName==='SELECT'){var f=findStep(t.dataset.step);setPath(f.st,t.dataset.path,t.value);f.st.upd=Date.now();save();syncY(t.dataset.step,true);return}
  if(t.id==='pstatus'){var p=findP(route.id);p.status=t.value;touch(p);logA((t.value==='done'?'Đánh dấu hoàn thành ':'Mở lại ')+'<b>'+esc(p.name)+'</b>',p.id);save();renderTree();toast(t.value==='done'?'Đã đánh dấu hoàn thành':'Đã chuyển sang đang thực hiện');return}
  if(route.v==='calc')calcEvents(e)});
 
@@ -854,7 +870,6 @@ document.addEventListener('click',function(e){
  case 'res':resDlg(sid);break;
  case 'clearCond':f.st.cond={};closeDlg();break;
  case 'clearRes':f.st.res={};closeDlg();break;
- case 'applyY':var v=$('ySug').dataset.v;if(v){f.st.res.yield=v;$('yIn').value=v;save()}break;
  case 'close':closeDlg();break;
  case 'settings':$('upop').classList.remove('on');settingsDlg();break;
  case 'saveSettings':(async function(){try{var user=await window.MemoryAuth.update({name:$('setName').value.trim()||S.user.name,lab:$('setLab').value.trim(),language:$('setLanguage').value});S.user.name=user.name;S.user.lab=user.lab;S.user.language=user.language;setLanguage(user.language);save();closeDlg();render();toast('Đã lưu cài đặt')}catch(error){toast('Không lưu được cài đặt')}})();break;

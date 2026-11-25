@@ -295,5 +295,17 @@
   "Khối lượng sau phản ứng": "Final mass",
   "Hiệu suất": "Yield",
   "Hình ảnh": "Images",
-  "Ghi chú": "Notes"
+  "Ghi chú": "Notes",
+  "Loại phép tính": "Calculation type",
+  "Hiệu suất cho": "Yield for",
+  "Tổng hợp": "Synthesis",
+  "Tách chiết": "Extraction",
+  "Khối lượng lý thuyết của sản phẩm": "Theoretical product mass",
+  "Nhập m₀ và m₁ cùng loại đơn vị để tự tính.": "Enter m₀ and m₁ in the same kind of unit to calculate.",
+  "η tự tính khi nhập m₀ và m₁. Với phản ứng tổng hợp, m₀ là khối lượng lý thuyết của sản phẩm, tính từ chất hết.": "η is calculated when m₀ and m₁ are entered. For synthesis, m₀ is the theoretical product mass, calculated from the limiting reagent.",
+  "η tự tính khi nhập m₀ và m₁. Với tách chiết, m₀ là khối lượng nguyên liệu ban đầu.": "η is calculated when m₀ and m₁ are entered. For extraction, m₀ is the starting material mass.",
+  "m₀ và m₁ phải cùng loại đơn vị (khối lượng hoặc thể tích).": "m₀ and m₁ must use the same kind of unit (mass or volume).",
+  "η lớn hơn 100%. Kiểm tra m₀: với phản ứng tổng hợp, m₀ phải là khối lượng lý thuyết của sản phẩm, không phải khối lượng chất đầu. Sản phẩm còn ẩm hoặc lẫn tạp cũng làm m₁ cao.": "η is above 100%. Check m₀: for synthesis, m₀ must be the theoretical product mass, not the starting reagent mass. A wet or impure product also raises m₁.",
+  "η lớn hơn 100%: m₁ lớn hơn m₀. Kiểm tra lại số liệu và đơn vị.": "η is above 100%: m₁ is larger than m₀. Check the values and units.",
+  "η phải lớn hơn 0. Kiểm tra m₁ và m₀.": "η must be above 0. Check m₁ and m₀."
 }
