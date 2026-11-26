@@ -226,8 +226,10 @@ table.lab{border-collapse:separate;border-spacing:0;width:100%;min-width:1600px;
 .lab td:last-child{border-right:0}
 .lab tr.flash td{animation:flash 1.6s ease}
 @keyframes flash{0%,40%{background:#E3F6F7}100%{background:#fff}}
-.lab td.no{position:sticky;left:0;z-index:2;width:56px;padding:8px 4px;text-align:center;vertical-align:middle;background:#FAFCFB;border-right:1px solid var(--line)}
+.lab td.no{position:sticky;left:0;z-index:2;width:112px;padding:8px 4px;text-align:center;vertical-align:middle;background:#FAFCFB;border-right:1px solid var(--line)}
 .lab td.no input{width:46px;height:30px;border:1px dashed transparent;border-radius:8px;background:transparent;text-align:center;font-family:var(--mono);font-size:14px;font-weight:600;color:var(--g700)}
+.lab td.no input.dts{width:100px;height:26px;margin-top:2px;padding:0 4px;border:1px solid var(--line);background:#fff;font-family:var(--sans);font-size:11px;font-weight:500;color:var(--ink);text-align:center}
+.lab td.no input.dts::-webkit-calendar-picker-indicator{display:none}
 .lab td.no input:hover{border-color:var(--g200)}
 .lab td.no input:focus{outline:0;border-color:var(--cyan);background:#fff}
 .history-trigger{display:block;margin:2px auto 0;width:25px;height:25px;border:0;border-radius:7px;background:transparent;color:var(--muted);font-size:19px;line-height:1;cursor:pointer}
@@ -401,6 +403,9 @@ table.dt{width:100%;border-collapse:collapse;font-size:12.5px}
 
 .toast{position:fixed;left:50%;bottom:24px;z-index:60;transform:translate(-50%,20px);padding:11px 16px;border-radius:12px;background:var(--ink);color:#fff;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;box-shadow:0 12px 30px rgba(0,0,0,.2)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.act{pointer-events:auto;display:flex;align-items:center;gap:14px}
+.toast-undo{border:0;border-radius:8px;padding:5px 10px;background:rgba(255,255,255,.16);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.toast-undo:hover,.toast-undo:focus-visible{background:rgba(255,255,255,.28)}
 .sidescrim{display:none}
 
 /* ============ CALC v2 ============ */
@@ -696,7 +701,7 @@ i.sw{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6p
     <div class="sres" id="sres"></div>
    </div>
    <div style="position:relative">
-    <button class="bell" id="bell" aria-label="Thông báo"><svg class="i"><use href="#i-bell"/></svg><span class="n" id="bn">3</span></button>
+    <button class="bell" id="bell" aria-label="Thông báo"><svg class="i"><use href="#i-bell"/></svg><span class="n" id="bn" style="display:none">0</span></button>
     <div class="npop" id="npop"></div>
    </div>
    <div class="uname"><svg viewBox="0 0 24 24"><use href="#i-user"/></svg><span id="topName">Tín</span></div>

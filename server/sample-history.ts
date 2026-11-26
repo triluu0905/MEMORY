@@ -14,10 +14,10 @@ function quantity(input: unknown): string { const q = object(input); return [val
 function fields(sample: RecordValue): Map<string, string> {
   const result = new Map<string, string>();
   result.set('Mã mẫu', value(sample.code));
+  result.set('Ngày thực hiện', value(sample.date));
   list(sample.steps).forEach((step, index) => {
     const prefix = `Bước ${index + 1} · `;
     const add = (label: string, content: unknown) => result.set(prefix + label, value(content));
-    add('Ngày thực hiện', step.date);
     add('Quy trình', step.procText);
     add('Tệp quy trình', namedFile(step.procFile));
     list(step.chems).forEach((chem, chemIndex) => {
@@ -58,6 +58,7 @@ export function diffSamples(before: unknown, after: unknown): SampleChange[] {
     const newFields = newSample ? fields(newSample) : new Map<string, string>();
     const changed = [...new Set([...oldFields.keys(), ...newFields.keys()])]
       .filter(field => (oldFields.get(field) || '') !== (newFields.get(field) || ''))
+      .filter(field => !(oldSample && field === 'Ngày thực hiện' && !oldFields.get(field)))
       .map(field => ({ field, before: oldFields.get(field) || '', after: newFields.get(field) || '' }));
     if (changed.length || !oldSample || !newSample) changes.push({
       sampleId: id, sampleCode: value((newSample || oldSample)?.code),
